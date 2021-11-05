@@ -1,6 +1,6 @@
 {
-  "name": "react-color-palette",
-  "version": "6.1.0",
+  "name": "react-color-palette-touch-fix",
+  "version": "6.1.3",
   "description": "🎨 Lightweight Color Picker component for React.",
   "main": "lib/index.js",
   "module": "lib/index.module.js",
