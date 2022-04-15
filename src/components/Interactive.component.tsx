@@ -2,12 +2,12 @@ import React, { useCallback, useEffect, useRef } from "react";
 import { InteractiveProps } from "../interfaces/Interactive.interface";
 import { clamp } from "../utils/clamp.util";
 
-const getPointerPositionPoint = (
-  event: MouseEvent | TouchEvent
-): {
+interface PointerPosition {
   x: number;
   y: number;
-} => {
+}
+
+const getPointerPosition = (event: MouseEvent | TouchEvent): PointerPosition => {
   if (window.TouchEvent && event instanceof TouchEvent) {
     return {
       x: event.touches[0].clientX,
@@ -27,7 +27,7 @@ export const Interactive = ({ className, style, onChange, children }: Interactiv
   const divRef = useRef<HTMLDivElement>(null);
 
   const move = useCallback(
-    (clientX: number, clientY: number): void => {
+    (clientX: number, clientY: number, complete?: boolean): void => {
       if (divRef.current) {
         const { current: div } = divRef;
         const { width, height, left, top } = div.getBoundingClientRect();
@@ -35,7 +35,9 @@ export const Interactive = ({ className, style, onChange, children }: Interactiv
         const x = clamp(clientX - left, width, 0);
         const y = clamp(clientY - top, height, 0);
 
-        onChange(x, y);
+        onChange({ x, y });
+
+        if (complete) onChange({ x, y, complete: true });
       }
     },
     [onChange]
@@ -43,19 +45,26 @@ export const Interactive = ({ className, style, onChange, children }: Interactiv
 
   const onPointerMove = useCallback(
     (event: MouseEvent | TouchEvent): void => {
-      const point = getPointerPositionPoint(event);
+      const point = getPointerPosition(event);
 
       move(point.x, point.y);
     },
     [move]
   );
 
-  const onPointerUp = useCallback((): void => {
-    document.removeEventListener("mousemove", onPointerMove);
-    document.removeEventListener("mouseup", onPointerUp);
-    document.removeEventListener("touchmove", onPointerMove);
-    document.removeEventListener("touchend", onPointerUp);
-  }, [onPointerMove]);
+  const onPointerUp = useCallback(
+    (event: MouseEvent | TouchEvent): void => {
+      document.removeEventListener("mousemove", onPointerMove);
+      document.removeEventListener("mouseup", onPointerUp);
+      document.removeEventListener("touchmove", onPointerMove);
+      document.removeEventListener("touchend", onPointerUp);
+
+      const point = getPointerPosition(event);
+
+      move(point.x, point.y, true);
+    },
+    [move, onPointerMove]
+  );
 
   const onPointerDown = useCallback(
     (event: MouseEvent | TouchEvent): void => {
@@ -65,7 +74,7 @@ export const Interactive = ({ className, style, onChange, children }: Interactiv
         event.preventDefault();
       }
 
-      const point = getPointerPositionPoint(event);
+      const point = getPointerPosition(event);
 
       move(point.x, point.y);
 
